@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# check_usb - Check if a USB device was plugged in
+# Copyright (C) 2015  Josef 'veloc1ty' Stautner (hello@veloc1ty.de)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use strict;
+use warnings;
+
+our $APP_DMESG = '/bin/dmesg';
+our $APP_TAIL = '/usr/bin/tail';
+our $APP_GREP = '/bin/grep';
+
+main();
+
+sub main {
+  checkEnvironment();
+
+  my @output = `$APP_DMESG | $APP_TAIL | $APP_GREP -iC 3 "New USB device"`;
+
+  decideExitCode(@output);
+}
+
+sub checkEnvironment {
+  exitUnknown("Command 'dmesg' not found in $APP_DMESG") if ( ! -e $APP_DMESG );
+  exitUnknown("Command 'tail' not found in $APP_TAIL") if ( ! -e $APP_TAIL );
+  exitUnknown("Command 'grep' not found in $APP_GREP") if ( ! -e $APP_GREP );
+}
+
+sub exitUnknown {
+  my $message = shift;
+  print($message . "\n");
+  exit 3;
+}
+
+sub decideExitCode {
+  my @output = @_;
+
+  if ( scalar(@output) != 0 ) {
+    print("CRITICAL - USB device detected\n");
+    exit 2;
+  }
+  else {
+    print("OK - No USB device detected\n");
+    exit 0;
+  }
+}
